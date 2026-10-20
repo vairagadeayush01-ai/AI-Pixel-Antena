@@ -1,0 +1,173 @@
+{
+ "config": {
+  "BAND": [
+   13.0,
+   17.0
+  ],
+  "THRESH_DB": -10.0,
+  "BIN_W": 0.5,
+  "MAX_PER_BIN": 6000,
+  "MAX_REPEAT": 3,
+  "VAL_CAP": 500,
+  "SINGLE_BAND_ONLY": false,
+  "REPLAY_FRAC": 0.0,
+  "ALPHA": 5.8,
+  "BETA": 1.0,
+  "LR": 0.0001,
+  "LR_MIN": 1e-06,
+  "SCHEDULER": "cosine",
+  "SELECT_BY": "total",
+  "EPOCHS": 30,
+  "PATIENCE": 12,
+  "BATCH": 512,
+  "SEED": 42,
+  "TOL_GHZ": 0.25,
+  "BASE_DB": 0.0,
+  "DEPTH_DB": -25.0,
+  "NOTCH_GHZ": 0.5,
+  "EM_TARGETS": [
+   13.5,
+   14.25,
+   15.0,
+   15.75,
+   16.5
+  ]
+ },
+ "duplicates": {
+  "rows": 677479,
+  "distinct_masks": 677479,
+  "orig_test_rows_with_mask_in_train": 0,
+  "orig_test_rows_with_mask_in_train_or_val": 0,
+  "orig_test_rows": 67748,
+  "clean_test_rows": 67748
+ },
+ "definitions": {
+  "in_band_resonant": "any S11 <= threshold inside the band",
+  "success": "a predicted dip <= threshold within TOL of the target dip"
+ },
+ "subset_train_size": 48000,
+ "subset_val_size": 4000,
+ "select_by": "total",
+ "best_epoch": 25,
+ "best_selection_metric": 4.752738349914551,
+ "improved_over_start": true,
+ "loss_components_start_vs_best": [
+  {
+   "index": "val total loss",
+   "start": 4.9299353256,
+   "best epoch (25)": 4.7527383499,
+   "change_%": -3.5943062942
+  },
+  {
+   "index": "val spectrum loss (MSE, dB^2)",
+   "start": 2.7292065048,
+   "best epoch (25)": 2.5546796474,
+   "change_%": -6.394783871
+  },
+  {
+   "index": "val hard-mask spectrum MAE (dB)",
+   "start": 0.8472816157,
+   "best epoch (25)": 0.8165880213,
+   "change_%": -3.6225965353
+  },
+  {
+   "index": "val design loss",
+   "start": 0.3794315934,
+   "best epoch (25)": 0.3789701171,
+   "change_%": -0.121623063
+  },
+  {
+   "index": "val binary loss",
+   "start": 2.55612e-05,
+   "best epoch (25)": 3.17257e-05,
+   "change_%": 24.1166020074
+  }
+ ],
+ "spearman_density_vs_success_prev": 0.6952455113840716,
+ "bootstrap_success_change_pp": {
+  "in band": [
+   -4.302319078947368,
+   -4.776315789473684,
+   -3.835361842105263
+  ],
+  "outside band": [
+   0.40051594262717993,
+   0.14446393561036164,
+   0.681044267877412
+  ]
+ },
+ "comparison": [
+  {
+   "model": "Original",
+   "subset": "in band 13-17 GHz",
+   "n": 15200.0,
+   "success_%": 70.507,
+   "legacy_success_%": 67.691,
+   "median_res_err_GHz": 0.0,
+   "mean_res_err_GHz": 0.457,
+   "spec_MAE_dB": 0.871,
+   "dip_depth_err_dB": 5.281,
+   "bw_err_GHz": 0.151
+  },
+  {
+   "model": "Original",
+   "subset": "outside band",
+   "n": 9691.0,
+   "success_%": 10.855,
+   "legacy_success_%": 10.154,
+   "median_res_err_GHz": 0.25,
+   "mean_res_err_GHz": 1.111,
+   "spec_MAE_dB": 1.025,
+   "dip_depth_err_dB": 10.162,
+   "bw_err_GHz": 0.213
+  },
+  {
+   "model": "Previous fine-tuned",
+   "subset": "in band 13-17 GHz",
+   "n": 15200.0,
+   "success_%": 68.5,
+   "legacy_success_%": 66.099,
+   "median_res_err_GHz": 0.0,
+   "mean_res_err_GHz": 0.444,
+   "spec_MAE_dB": 0.841,
+   "dip_depth_err_dB": 5.274,
+   "bw_err_GHz": 0.149
+  },
+  {
+   "model": "Previous fine-tuned",
+   "subset": "outside band",
+   "n": 9691.0,
+   "success_%": 13.126,
+   "legacy_success_%": 12.537,
+   "median_res_err_GHz": 0.25,
+   "mean_res_err_GHz": 1.067,
+   "spec_MAE_dB": 1.008,
+   "dip_depth_err_dB": 9.973,
+   "bw_err_GHz": 0.209
+  },
+  {
+   "model": "New in-band",
+   "subset": "in band 13-17 GHz",
+   "n": 15200.0,
+   "success_%": 64.197,
+   "legacy_success_%": 62.401,
+   "median_res_err_GHz": 0.0,
+   "mean_res_err_GHz": 0.449,
+   "spec_MAE_dB": 0.806,
+   "dip_depth_err_dB": 5.415,
+   "bw_err_GHz": 0.148
+  },
+  {
+   "model": "New in-band",
+   "subset": "outside band",
+   "n": 9691.0,
+   "success_%": 13.528,
+   "legacy_success_%": 13.012,
+   "median_res_err_GHz": 0.25,
+   "mean_res_err_GHz": 1.019,
+   "spec_MAE_dB": 1.004,
+   "dip_depth_err_dB": 9.879,
+   "bw_err_GHz": 0.209
+  }
+ ]
+}
