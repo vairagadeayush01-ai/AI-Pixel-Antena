@@ -259,6 +259,149 @@ end
 """
 
 
+def create_3d_antenna(mask_arr, target_freq=14.25):
+    """Generate interactive 3D WebGL CAD visualization of the pixel antenna."""
+    L_sub, W_sub, H_sub = 15.0, 15.0, 0.61
+    L_ant, W_ant = 7.5, 7.5
+    nx, ny = 12, 12
+    dx = L_ant / nx
+    dy = W_ant / ny
+    px = 1.25 * dx
+    py = 1.25 * dy
+
+    # 1. Substrate Box (Mesh3d)
+    x_sub = [-L_sub/2, L_sub/2, L_sub/2, -L_sub/2, -L_sub/2, L_sub/2, L_sub/2, -L_sub/2]
+    y_sub = [-W_sub/2, -W_sub/2, W_sub/2, W_sub/2, -W_sub/2, -W_sub/2, W_sub/2, W_sub/2]
+    z_sub = [0, 0, 0, 0, H_sub, H_sub, H_sub, H_sub]
+    i_sub = [7, 0, 0, 0, 4, 4, 6, 6, 4, 0, 3, 2]
+    j_sub = [3, 4, 1, 2, 5, 6, 5, 2, 0, 1, 6, 3]
+    k_sub = [0, 7, 2, 3, 6, 7, 1, 1, 5, 5, 7, 6]
+
+    fig = go.Figure()
+
+    # Substrate Layer (Dielectric Laminate)
+    fig.add_trace(go.Mesh3d(
+        x=x_sub, y=y_sub, z=z_sub,
+        i=i_sub, j=j_sub, k=k_sub,
+        color='#dfb173', opacity=0.88,
+        name='Substrate (Air/PCB, 0.61 mm)',
+        flatshading=True,
+        lighting=dict(ambient=0.55, diffuse=0.85, specular=0.25, roughness=0.5)
+    ))
+
+    # Copper Pixel Patches
+    vx, vy, vz = [], [], []
+    tri_i, tri_j, tri_k = [], [], []
+    z_patch = H_sub + 0.035
+
+    for r in range(ny):
+        for c in range(nx):
+            if mask_arr[r, c] != 0:
+                cx = -L_ant/2 + (c + 0.5) * dx
+                cy = W_ant/2 - (r + 0.5) * dy
+                idx = len(vx)
+                vx.extend([cx - px/2, cx + px/2, cx + px/2, cx - px/2])
+                vy.extend([cy - py/2, cy - py/2, cy + py/2, cy + py/2])
+                vz.extend([z_patch, z_patch, z_patch, z_patch])
+                tri_i.extend([idx, idx])
+                tri_j.extend([idx+1, idx+2])
+                tri_k.extend([idx+2, idx+3])
+
+    if vx:
+        fig.add_trace(go.Mesh3d(
+            x=vx, y=vy, z=vz,
+            i=tri_i, j=tri_j, k=tri_k,
+            color='#b87333', opacity=1.0,
+            name='Copper Patches (35 µm)',
+            flatshading=True,
+            lighting=dict(ambient=0.45, diffuse=0.9, specular=0.7, roughness=0.15)
+        ))
+
+    # 50 Ohm Feed Strip
+    feed_w, feed_l = 1.976, 2.0
+    fx = [-L_ant/2 - feed_l, -L_ant/2, -L_ant/2, -L_ant/2 - feed_l]
+    fy = [-feed_w/2, -feed_w/2, feed_w/2, feed_w/2]
+    fz = [z_patch, z_patch, z_patch, z_patch]
+    fig.add_trace(go.Mesh3d(
+        x=fx, y=fy, z=fz,
+        i=[0, 0], j=[1, 2], k=[2, 3],
+        color='#b87333', opacity=1.0,
+        name='50 Ω Microstrip Feed'
+    ))
+
+    # Red feed probe pin
+    fig.add_trace(go.Scatter3d(
+        x=[-L_ant/2 - feed_l/2], y=[0], z=[z_patch + 0.15],
+        mode='markers',
+        marker=dict(size=7, color='#e63946', symbol='circle'),
+        name='Feed Probe Pin'
+    ))
+
+    # Dimension lines & text
+    fig.add_trace(go.Scatter3d(
+        x=[-L_ant/2, L_ant/2], y=[W_ant/2 + 0.8, W_ant/2 + 0.8], z=[z_patch + 0.1, z_patch + 0.1],
+        mode='lines+text', line=dict(color='#00d2ff', width=3),
+        text=['', '7.5 mm'], textposition='top center',
+        name='7.5 mm Width'
+    ))
+    fig.add_trace(go.Scatter3d(
+        x=[L_ant/2 + 0.8, L_ant/2 + 0.8], y=[-W_ant/2, W_ant/2], z=[z_patch + 0.1, z_patch + 0.1],
+        mode='lines+text', line=dict(color='#00d2ff', width=3),
+        text=['', '7.5 mm'], textposition='middle right',
+        name='7.5 mm Length'
+    ))
+    fig.add_trace(go.Scatter3d(
+        x=[-L_sub/2 - 0.5, -L_sub/2 - 0.5], y=[-W_sub/2, -W_sub/2], z=[0, H_sub],
+        mode='lines+text', line=dict(color='#ffd700', width=3),
+        text=['', '0.61 mm'], textposition='middle left',
+        name='0.61 mm Thickness'
+    ))
+
+    fig.update_layout(
+        scene=dict(
+            xaxis=dict(title='X (mm)', range=[-10, 10], showbackground=False),
+            yaxis=dict(title='Y (mm)', range=[-10, 10], showbackground=False),
+            zaxis=dict(title='Z (mm)', range=[-0.5, 2.5], showbackground=False),
+            aspectmode='data',
+            camera=dict(
+                eye=dict(x=-1.5, y=-1.5, z=1.2),
+                up=dict(x=0, y=0, z=1)
+            )
+        ),
+        margin=dict(l=0, r=0, t=10, b=0),
+        template='plotly_dark',
+        height=450
+    )
+    return fig
+
+
+def create_2d_copper(mask_arr, target_freq=14.25):
+    """Generate top-down 2D copper layout matching published paper aesthetics."""
+    fig = go.Figure(data=go.Heatmap(
+        z=np.flipud(mask_arr),
+        colorscale=[[0, '#e8caa4'], [1, '#b87333']],
+        showscale=False,
+        xgap=2, ygap=2,
+        hovertemplate='Pixel (Row %{y}, Col %{x})<br>Status: %{z}<extra></extra>'
+    ))
+    fig.add_trace(go.Scatter(
+        x=[0], y=[5.5],
+        mode='markers+text',
+        marker=dict(size=13, color='#e63946', symbol='circle', line=dict(color='white', width=2)),
+        text=['Feed Pin'],
+        textposition='bottom center',
+        name='Feed Location'
+    ))
+    fig.update_layout(
+        width=420, height=450,
+        plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+        margin=dict(l=10, r=10, t=10, b=10),
+        xaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
+        yaxis=dict(showticklabels=False, showgrid=False, zeroline=False, scaleanchor='x')
+    )
+    return fig
+
+
 # ── Load data ────────────────────────────────────────────────────────────
 summary     = load_json("summary.json")
 config      = summary["config"]
@@ -403,27 +546,41 @@ if page == "🔬 Interactive Designer":
     col_mask, col_spec = st.columns([1, 1.6])
 
     with col_mask:
-        st.markdown("#### 🧩 Generated Antenna Mask")
+        st.markdown("#### 📡 Antenna Structure View")
         if is_live:
             st.caption("🟢 **Real-Time Neural Inference Active** (< 2 ms latency)")
         else:
             st.caption(f"📁 Loaded Precomputed Benchmark Mask ({target_freq:.2f} GHz)")
 
         if mask_arr is not None:
-            fig_mask = go.Figure(data=go.Heatmap(
-                z=np.flipud(mask_arr),
-                colorscale=[[0, "#0d1117"], [1, "#00d2ff"]],
-                showscale=False, xgap=2, ygap=2,
-                hovertemplate="Row %{y}, Col %{x}<br>Pixel: %{z}<extra></extra>",
-            ))
-            fig_mask.update_layout(
-                width=420, height=420,
-                plot_bgcolor="#0d1117", paper_bgcolor="rgba(0,0,0,0)",
-                margin=dict(l=10, r=10, t=10, b=10),
-                xaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
-                yaxis=dict(showticklabels=False, showgrid=False, zeroline=False, scaleanchor="x"),
+            view_mode = st.radio(
+                "Select View Mode",
+                ["🧊 3D CAD View", "📐 2D Copper Layout", "💻 Matrix Grid"],
+                horizontal=True,
+                label_visibility="collapsed",
             )
-            st.plotly_chart(fig_mask, use_container_width=True)
+
+            if view_mode == "🧊 3D CAD View":
+                fig_3d = create_3d_antenna(mask_arr, target_freq)
+                st.plotly_chart(fig_3d, use_container_width=True)
+            elif view_mode == "📐 2D Copper Layout":
+                fig_2d = create_2d_copper(mask_arr, target_freq)
+                st.plotly_chart(fig_2d, use_container_width=True)
+            else:
+                fig_mask = go.Figure(data=go.Heatmap(
+                    z=np.flipud(mask_arr),
+                    colorscale=[[0, "#0d1117"], [1, "#00d2ff"]],
+                    showscale=False, xgap=2, ygap=2,
+                    hovertemplate="Row %{y}, Col %{x}<br>Pixel: %{z}<extra></extra>",
+                ))
+                fig_mask.update_layout(
+                    width=420, height=450,
+                    plot_bgcolor="#0d1117", paper_bgcolor="rgba(0,0,0,0)",
+                    margin=dict(l=10, r=10, t=10, b=10),
+                    xaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
+                    yaxis=dict(showticklabels=False, showgrid=False, zeroline=False, scaleanchor="x"),
+                )
+                st.plotly_chart(fig_mask, use_container_width=True)
 
             pixels_on = int(np.sum(mask_arr != 0))
             pct_on = 100 * pixels_on / mask_arr.size
