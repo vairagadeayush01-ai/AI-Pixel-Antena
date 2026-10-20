@@ -219,7 +219,14 @@ if page == "🔬 Interactive Designer":
     )
 
     mask_arr = masks.get(target_freq)
+    if mask_arr is None and len(masks) > 0:
+        nearest_f = min(masks.keys(), key=lambda f: abs(f - target_freq))
+        mask_arr = masks[nearest_f]
+
     target_row = em_targets[em_targets["target_GHz"] == target_freq]
+    if target_row.empty and not em_targets.empty:
+        nearest_target = min(em_targets["target_GHz"], key=lambda f: abs(f - target_freq))
+        target_row = em_targets[em_targets["target_GHz"] == nearest_target]
 
     # ── Mask + Spectrum ──────────────────────────────────────────────────
     col_mask, col_spec = st.columns([1, 1.6])
@@ -251,6 +258,11 @@ if page == "🔬 Interactive Designer":
     with col_spec:
         st.markdown("#### 📉 Predicted S₁₁ Spectrum")
         spec_col = f"{target_freq}GHz"
+        if spec_col not in em_spectra.columns:
+            spec_cols = [c for c in em_spectra.columns if c != "Frequency_GHz"]
+            if spec_cols:
+                spec_col = min(spec_cols, key=lambda c: abs(float(c.replace("GHz", "")) - target_freq))
+
         if spec_col in em_spectra.columns:
             fig_spec = go.Figure()
             fig_spec.add_trace(go.Scatter(
